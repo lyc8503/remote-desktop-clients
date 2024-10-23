@@ -1,5 +1,9 @@
-v5.3.5
-- Improved icon resolution
+v5.5.7
+- Stability improvements 
+v5.4.8
+- Support for ACTION_BUTTON_PRESS and ACTION_BUTTON_RELEASE mouse actions 
+v5.4.7
+- New round icon
 v5.3.4
 - Fix for toolbar position not restored
 v5.3.3

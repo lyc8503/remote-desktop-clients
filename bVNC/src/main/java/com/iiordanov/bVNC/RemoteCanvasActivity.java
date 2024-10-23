@@ -27,7 +27,6 @@ import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -37,7 +36,6 @@ import android.database.Cursor;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -80,25 +78,18 @@ import com.iiordanov.bVNC.input.TouchInputHandlerDirectDragPan;
 import com.iiordanov.bVNC.input.TouchInputHandlerDirectSwipePan;
 import com.iiordanov.bVNC.input.TouchInputHandlerSingleHanded;
 import com.iiordanov.bVNC.input.TouchInputHandlerTouchpad;
+import com.iiordanov.bVNC.protocol.GettingConnectionSettingsException;
 import com.iiordanov.bVNC.protocol.RemoteConnection;
 import com.iiordanov.bVNC.protocol.RemoteConnectionFactory;
 import com.iiordanov.util.SamsungDexUtils;
-import com.iiordanov.util.UriIntentParser;
 import com.undatech.opaque.Connection;
-import com.undatech.opaque.ConnectionSettings;
-import com.undatech.opaque.MessageDialogs;
 import com.undatech.opaque.RemoteClientLibConstants;
 import com.undatech.opaque.dialogs.SelectTextElementFragment;
-import com.undatech.opaque.util.FileUtils;
 import com.undatech.opaque.util.GeneralUtils;
 import com.undatech.opaque.util.OnTouchViewMover;
 import com.undatech.opaque.util.RemoteToolbar;
 import com.undatech.remoteClientUi.R;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
-import java.net.URLConnection;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -256,8 +247,10 @@ public class RemoteCanvasActivity extends AppCompatActivity implements
      * Enables sticky immersive mode if supported.
      */
     private void enableImmersive() {
-        handler.removeCallbacks(immersiveEnabler);
-        handler.postDelayed(immersiveEnabler, 200);
+        if (handler != null) {
+            handler.removeCallbacks(immersiveEnabler);
+            handler.postDelayed(immersiveEnabler, 200);
+        }
     }
 
     /**
@@ -328,92 +321,42 @@ public class RemoteCanvasActivity extends AppCompatActivity implements
             }
         };
 
-        String vvFileName = null;
-        if (Utils.isOpaque(this)) {
-            vvFileName = retrieveVvFileFromIntent(getIntent());
-            connection = getOpaqueConnection(vvFileName);
-        } else {
-            connection = getNonOpaqueConnection();
+        setApplicationSpecificSettings();
+
+        try {
+            connection = AbstractConnectionBean.getRemoteConnectionSettings(getIntent(), this, isMasterPasswordEnabled());
+        } catch (GettingConnectionSettingsException e) {
+            Utils.showFatalErrorMessage(this, getResources().getString(e.getErrorStringId()));
+            return;
         }
+        remoteConnection = new RemoteConnectionFactory(this, connection, canvas, hideKeyboardAndExtraKeys).build();
+
         if (connection != null && connection.isReadyForConnection()) {
-            remoteConnection = new RemoteConnectionFactory(this, connection, canvas, vvFileName, hideKeyboardAndExtraKeys).build();
             handler = new RemoteCanvasHandler(this, canvas, remoteConnection, connection, setModes);
             handler.sendEmptyMessage(RemoteClientLibConstants.REINIT_SESSION);
             continueConnecting();
+        } else {
+            showConnectionScreenOrExitIfNotReadyForConnecting(connection);
         }
 
         Log.d(TAG, "OnCreate complete");
     }
 
-    @SuppressLint("SourceLockedOrientationActivity")
-    Connection getNonOpaqueConnection() {
-        Connection connection;
-        if (Utils.querySharedPreferenceBoolean(this, Constants.keepScreenOnTag))
-            getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-
-        if (Utils.querySharedPreferenceBoolean(this, Constants.forceLandscapeTag))
-            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
-
-        Intent i = getIntent();
-        Uri data = i.getData();
-        boolean isSupportedScheme = isSupportedScheme(data);
-        if (isSupportedScheme || !Utils.isNullOrEmptry(i.getType())) {
-            connection = handleSupportedUri(data);
+    private void setApplicationSpecificSettings() {
+        if (Utils.isOpaque(this)) {
+            setVolumeControlStream(AudioManager.STREAM_MUSIC);
         } else {
-            connection = loadSerializedConnection(i);
-        }
-        return connection;
-    }
+            if (Utils.querySharedPreferenceBoolean(this, Constants.keepScreenOnTag))
+                getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
-    private Connection loadSerializedConnection(Intent i) {
-        Log.d(TAG, "Initializing serialized connection");
-        Connection connection = new ConnectionBean(this);
-        Bundle extras = i.getExtras();
-
-        if (extras != null) {
-            Log.d(TAG, "Loading values from serialized connection");
-            connection.populateFromContentValues((ContentValues) extras.getParcelable(Utils.getConnectionString(this)));
-            connection.load(this);
+            if (Utils.querySharedPreferenceBoolean(this, Constants.forceLandscapeTag))
+                setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
         }
-        return connection;
-    }
-
-    private Connection handleSupportedUri(Uri data) {
-        Log.d(TAG, "Initializing classic connection from Intent.");
-        if (isMasterPasswordEnabled()) {
-            Utils.showFatalErrorMessage(this, getResources().getString(R.string.master_password_error_intents_not_supported));
-            return null;
-        }
-
-        Connection connection = createConnectionFromUri(data);
-        showConnectionScreenOrExitIfNotReadyForConnecting(connection);
-        return connection;
-    }
-
-    private Connection createConnectionFromUri(Uri data) {
-        Connection connection = UriIntentParser.loadFromUriOrCreateNew(data, this);
-        String host = null;
-        if (data != null) {
-            host = data.getHost();
-        }
-        if (host != null && !host.startsWith(Utils.getConnectionString(this))) {
-            UriIntentParser.parseFromUri(this, connection, data);
-        }
-        return connection;
-    }
-
-    private boolean isSupportedScheme(Uri data) {
-        boolean isSupportedScheme = false;
-        if (data != null) {
-            String s = data.getScheme();
-            isSupportedScheme = "rdp".equals(s) || "spice".equals(s) || "vnc".equals(s);
-        }
-        return isSupportedScheme;
     }
 
     private void showConnectionScreenOrExitIfNotReadyForConnecting(Connection connection) {
         // we need to save the connection to display the loading screen, so otherwise we should exit
-        if (!connection.isReadyForConnection()) {
+        if (connection == null || !connection.isReadyForConnection()) {
             Toast.makeText(this, getString(R.string.error_uri_noinfo_nosave), Toast.LENGTH_LONG).show();
             if (connection.isReadyToBeSaved()) {
                 Log.i(TAG, "Exiting - Insufficent information to connect and connection was not saved.");
@@ -431,21 +374,6 @@ public class RemoteCanvasActivity extends AppCompatActivity implements
             }
             Utils.justFinish(this);
         }
-    }
-
-    @SuppressLint("SourceLockedOrientationActivity")
-    private Connection getOpaqueConnection(String vvFileName) {
-        Connection connection;
-        setVolumeControlStream(AudioManager.STREAM_MUSIC);
-        Intent i = getIntent();
-        if (vvFileName == null) {
-            Log.d(TAG, "Initializing session from connection settings.");
-            connection = (ConnectionSettings) i.getSerializableExtra(Constants.opaqueConnectionSettingsClassPath);
-        } else {
-            connection = new ConnectionSettings(RemoteClientLibConstants.DEFAULT_SETTINGS_FILE);
-            connection.load(getApplicationContext());
-        }
-        return connection;
     }
 
     @SuppressLint("RtlHardcoded")
@@ -601,94 +529,6 @@ public class RemoteCanvasActivity extends AppCompatActivity implements
                     standardPositionX,
                     standardPositionY);
         }
-    }
-
-    /**
-     * Retrieves a vv file from the intent if possible and returns the path to it.
-     *
-     * @param i intent that started the activity
-     * @return the vv file name or NULL if no file was discovered.
-     */
-    private String retrieveVvFileFromIntent(Intent i) {
-        final Uri data = i.getData();
-        String vvFileName = null;
-        final String tempVvFile = getFilesDir() + "/tempfile.vv";
-        int msgId = 0;
-
-        Log.d(TAG, "Got intent: " + i);
-
-        if (data != null) {
-            Log.d(TAG, "Got data: " + data);
-            final String dataString = data.toString();
-            if (dataString.startsWith("http")) {
-                android.util.Log.d(TAG, "Intent is with http scheme.");
-                msgId = R.string.error_failed_to_download_vv_http;
-                FileUtils.deleteFile(tempVvFile);
-
-                // Spin up a thread to grab the file over the network.
-                Thread t = new Thread() {
-                    @Override
-                    public void run() {
-                        try {
-                            // Download the file and write it out.
-                            URL url = new URL(data.toString());
-                            File file = new File(tempVvFile);
-                            URLConnection ucon = url.openConnection();
-                            FileUtils.outputToFile(ucon.getInputStream(), file);
-
-                            synchronized (RemoteCanvasActivity.this) {
-                                RemoteCanvasActivity.this.notify();
-                            }
-                        } catch (IOException e) {
-                            int what = RemoteClientLibConstants.VV_OVER_HTTP_FAILURE;
-                            if (dataString.startsWith("https")) {
-                                what = RemoteClientLibConstants.VV_OVER_HTTPS_FAILURE;
-                            }
-                            // Quit with an error we could not download the .vv file.
-                            handler.sendEmptyMessage(what);
-                        }
-                    }
-                };
-                t.start();
-
-                synchronized (this) {
-                    try {
-                        this.wait(RemoteClientLibConstants.VV_GET_FILE_TIMEOUT);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    vvFileName = tempVvFile;
-                }
-            } else if (dataString.startsWith("file")) {
-                Log.d(TAG, "Intent is with file scheme.");
-                msgId = R.string.error_failed_to_obtain_vv_file;
-                vvFileName = data.getPath();
-            } else if (dataString.startsWith("content")) {
-                Log.d(TAG, "Intent is with content scheme.");
-                msgId = R.string.error_failed_to_obtain_vv_content;
-                FileUtils.deleteFile(tempVvFile);
-
-                try {
-                    FileUtils.outputToFile(getContentResolver().openInputStream(data), new File(tempVvFile));
-                    vvFileName = tempVvFile;
-                } catch (IOException e) {
-                    Log.e(TAG, "Could not write temp file: IOException.");
-                    e.printStackTrace();
-                } catch (SecurityException e) {
-                    Log.e(TAG, "Could not write temp file: SecurityException.");
-                    e.printStackTrace();
-                }
-            }
-
-            // Check if we were successful in obtaining a file and put up an error dialog if not.
-            if (dataString.startsWith("http") || dataString.startsWith("file") || dataString.startsWith("content")) {
-                if (vvFileName == null)
-                    MessageDialogs.displayMessageAndFinish(this, msgId, R.string.error_dialog_title);
-            }
-            android.util.Log.d(TAG, "Got filename: " + vvFileName);
-        }
-
-        return vvFileName;
     }
 
     public void extraKeysToggle(MenuItem m) {
@@ -1428,7 +1268,7 @@ public class RemoteCanvasActivity extends AppCompatActivity implements
     protected void onDestroy() {
         super.onDestroy();
         Log.i(TAG, "onDestroy called.");
-        if (canvas != null)
+        if (remoteConnection != null)
             remoteConnection.closeConnection();
         System.gc();
     }
@@ -1618,6 +1458,8 @@ public class RemoteCanvasActivity extends AppCompatActivity implements
     public RemoteConnection getRemoteConnection() {
         return remoteConnection;
     }
+
+    public Handler getHandler() { return handler; }
 
     private class ActionBarPositionSaver implements Runnable {
         public void run() {

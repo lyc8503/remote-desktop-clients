@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.undatech.opaque"
-    android:versionCode="115350"
-    android:versionName="v5.3.5">
+    android:versionCode="115570"
+    android:versionName="v5.5.7">
 
     <uses-feature
         android:name="android.hardware.usb.host"
@@ -29,7 +29,7 @@
         android:name="com.iiordanov.bVNC.App"
         android:allowBackup="true"
         android:banner="@mipmap/banner_opaque"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/icon_opaque"
         android:label="@string/opaque_app_name"
         android:theme="@android:style/Theme.DeviceDefault">
         <uses-library
@@ -255,6 +255,9 @@
             </intent-filter>
             <intent-filter>
                 <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.hardware.usb.action.USB_ACCESSORY_ATTACHED" />
             </intent-filter>
         </activity>
 

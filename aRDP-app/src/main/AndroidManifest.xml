@@ -3,8 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.iiordanov.aRDP"
     android:installLocation="auto"
-    android:versionCode="115350"
-    android:versionName="v5.3.5">
+    android:versionCode="115570"
+    android:versionName="v5.5.7">
 
     <uses-permission tools:node="removeAll" />
     <uses-permission android:name="android.permission.INTERNET" />
@@ -88,23 +88,20 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
-                <data
-                    android:host="*"
-                    android:pathPattern=".*\\.rdp"
-                    android:scheme="http" />
-                <data
-                    android:host="*"
-                    android:pathPattern="/.*\\.rdp"
-                    android:scheme="file" />
-                <data
-                    android:host="*"
-                    android:pathPattern=".*\\.RDP"
-                    android:scheme="http" />
-                <data
-                    android:host="*"
-                    android:pathPattern="/.*\\.RDP"
-                    android:scheme="file" />
+
                 <data android:mimeType="*/*" />
+
+                <data android:mimeType="application/rdp"/>
+                <data android:scheme="file"/>
+                <data android:scheme="content"/>
+                <data android:pathPattern=".*\\.rdp"/>
+                <data android:pathPattern=".*\\.rdp"/>
+                <data android:pathPattern=".*\\..*\\.rdp"/>
+                <data android:pathPattern=".*\\..*\\..*\\.rdp"/>
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.rdp"/>
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\.rdp"/>
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\.rdp"/>
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\.rdp"/>
             </intent-filter>
         </activity>
         <activity

@@ -59,8 +59,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
 
-abstract public class RemoteConnection implements PointerInputHandler, KeyInputHandler, InputCarriable {
+;
 
+abstract public class RemoteConnection implements PointerInputHandler, KeyInputHandler, InputCarriable {
     private final static String TAG = "RemoteConnection";
 
     // Connection parameters
@@ -77,7 +78,7 @@ abstract public class RemoteConnection implements PointerInputHandler, KeyInputH
      * Handler for the dialogs that display the x509/RDP/SSH key signatures to the user.
      * Also shows the dialogs which show various connection failures.
      */
-    public Handler handler;
+    public static Handler handler;
     public Map<String, String> vmNameToId = new HashMap<>();
     // RFB Decoder
     Decoder decoder = null;
@@ -89,7 +90,6 @@ abstract public class RemoteConnection implements PointerInputHandler, KeyInputH
     Timer clipboardMonitorTimer;
     ClipboardMonitor clipboardMonitor;
     boolean sshTunneled;
-    String vvFileName;
     Context context;
     Viewable canvas;
 
@@ -100,13 +100,11 @@ abstract public class RemoteConnection implements PointerInputHandler, KeyInputH
             final Context context,
             Connection connection,
             Viewable canvas,
-            String vvFileName,
             Runnable hideKeyboardAndExtraKeys
     ) {
         this.context = context;
         this.connection = connection;
         this.canvas = canvas;
-        this.vvFileName = vvFileName;
         this.hideKeyboardAndExtraKeys = hideKeyboardAndExtraKeys;
         this.sshTunneled = connection.getConnectionType() == Constants.CONN_TYPE_SSH;
         this.clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
@@ -215,10 +213,6 @@ abstract public class RemoteConnection implements PointerInputHandler, KeyInputH
                 showFatalMessageAndQuit(error);
             }
         }
-    }
-
-    public String getVvFileName() {
-        return this.vvFileName;
     }
 
     /**

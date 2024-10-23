@@ -63,6 +63,8 @@ public class ConnectionBean extends AbstractConnectionBean implements Comparable
     private boolean useLastPositionToolbarMoved;
     private boolean showOnlyConnectionNicknames = false;
 
+    private String connectionConfigFile = null;
+
     public ConnectionBean(Context context) {
         String inputMode = TouchInputHandlerDirectSwipePan.ID;
         boolean preferSendingUnicode = false;
@@ -136,7 +138,7 @@ public class ConnectionBean extends AbstractConnectionBean implements Comparable
         setRdpWidth(0);
         setRdpHeight(0);
         setRdpColor(Constants.DEFAULT_RDP_COLOR_MODE);
-        setRemoteFx(false);
+        setRemoteFx(true);
         setDesktopBackground(false);
         setFontSmoothing(false);
         setDesktopComposition(false);
@@ -155,7 +157,7 @@ public class ConnectionBean extends AbstractConnectionBean implements Comparable
         setIdHash("");
         setScreenshotFilename(Utils.newScreenshotFileName());
 
-        setEnableGfx(false);
+        setEnableGfx(true);
         setEnableGfxH264(false);
         setPreferSendingUnicode(preferSendingUnicode);
         setExternalId("");
@@ -265,6 +267,16 @@ public class ConnectionBean extends AbstractConnectionBean implements Comparable
     @Override
     public void setConnectionTypeString(String connectionTypeString) {
 
+    }
+
+    @Override
+    public String getConnectionConfigFile() {
+        return this.connectionConfigFile;
+    }
+
+    @Override
+    public void setConnectionConfigFile(String connectionConfigFile) {
+        this.connectionConfigFile = connectionConfigFile;
     }
 
     @Override
@@ -378,10 +390,12 @@ public class ConnectionBean extends AbstractConnectionBean implements Comparable
 
     public synchronized void save(Context c) {
         Log.d(TAG, "save called");
-        Database database = new Database(c);
-        save(database.getWritableDatabase());
-        database.close();
-        saveToSharedPreferences(c);
+        if (this.connectionConfigFile == null) {
+            Database database = new Database(c);
+            save(database.getWritableDatabase());
+            database.close();
+            saveToSharedPreferences(c);
+        }
         readyToBeSaved = true;
     }
 

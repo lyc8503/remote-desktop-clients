@@ -2,10 +2,8 @@ package com.iiordanov.bVNC.protocol
 
 import android.content.Context
 import android.util.Log
-import android.view.KeyEvent
 import com.iiordanov.bVNC.App
 import com.iiordanov.bVNC.COLORMODEL
-import com.iiordanov.bVNC.Constants
 import com.iiordanov.bVNC.Utils
 import com.iiordanov.bVNC.input.RemoteSpiceKeyboard
 import com.iiordanov.bVNC.input.RemoteSpicePointer
@@ -21,9 +19,8 @@ open class RemoteOpaqueConnection(
     context: Context,
     connection: Connection?,
     canvas: Viewable,
-    vvFileName: String?,
     hideKeyboardAndExtraKeys: Runnable,
-) : RemoteConnection(context, connection, canvas, vvFileName, hideKeyboardAndExtraKeys) {
+) : RemoteConnection(context, connection, canvas, hideKeyboardAndExtraKeys) {
     private val tag: String = "RemoteOpaqueConnection"
     protected var spiceComm: SpiceCommunicator? = null
 
@@ -45,30 +42,36 @@ open class RemoteOpaqueConnection(
         } catch (e: Throwable) {
             handleUncaughtException(e, R.string.error_spice_unable_to_connect)
         }
-        maintainConnection = true
-        if (vvFileName == null) {
+    }
+
+    protected fun startConnectionDirectlyOrFromFile() {
+        val connectionConfigFile = connection.connectionConfigFile
+        if (connectionConfigFile == null) {
             startConnection()
         } else {
-            Log.d(tag, "Initializing session from vv file: $vvFileName")
-            val f = File(vvFileName)
-            if (!f.exists()) {
-                // Quit with an error if the file does not exist.
-                MessageDialogs.displayMessageAndFinish(context, R.string.vv_file_not_found, R.string.error_dialog_title)
-            }
-            startFromVvFile(vvFileName)
+            checkConfigFileAndStart(connectionConfigFile)
         }
-        initializeClipboardMonitor()
+    }
+
+    private fun checkConfigFileAndStart(connectionConfigFile: String?) {
+        Log.d(tag, "Initializing session from vv file: $connectionConfigFile")
+        val f = File(connectionConfigFile)
+        if (!f.exists()) {
+            // Quit with an error if the file does not exist.
+            MessageDialogs.displayMessageAndFinish(context, R.string.vv_file_not_found, R.string.error_dialog_title)
+        }
+        startFromVvFile(connectionConfigFile)
     }
 
     open fun startConnection() {
 
     }
 
-    open fun startFromVvFile(vvFileName: String?) {
+    open fun startFromVvFile(configFileName: String?) {
         val cThread: Thread = object : Thread() {
             override fun run() {
                 try {
-                    spiceComm?.startSessionFromVvFile(vvFileName, connection.isAudioPlaybackEnabled)
+                    spiceComm?.startSessionFromVvFile(configFileName, connection.isAudioPlaybackEnabled)
                 } catch (e: Throwable) {
                     handleUncaughtException(e, R.string.error_spice_unable_to_connect)
                 }

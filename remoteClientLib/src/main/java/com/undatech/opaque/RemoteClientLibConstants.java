@@ -58,8 +58,6 @@ public class RemoteClientLibConstants {
     public static final int NO_VM_FOUND_FOR_USER = 28;
     public static final int VV_FILE_ERROR = 29;
     public static final int OVIRT_TIMEOUT = 30;
-    public static final int VV_OVER_HTTP_FAILURE = 31;
-    public static final int VV_OVER_HTTPS_FAILURE = 32;
     public static final int PVE_FAILED_TO_AUTHENTICATE = 33;
     public static final int PVE_FAILED_TO_CONNECT = 34;
     public static final int PVE_FAILED_TO_PARSE_JSON = 35;
@@ -78,23 +76,18 @@ public class RemoteClientLibConstants {
     public static final int GET_RDP_GATEWAY_CREDENTIALS = 48;
     public static final int SHOW_KEYBOARD = 49;
     public static final int SHOW_KEYBOARD_ICON = 50;
-
     public static final int PRO_FEATURE = 99;
-    public static final int ADVANCED_SETTINGS = 1;
-    public static final int DEFAULT_SETTINGS = 2;
+    public static final int ADVANCED_SETTINGS_REQUEST_CODE = 1;
+    public static final int DEFAULT_SETTINGS_REQUEST_CODE = 2;
     public static final int IMPORT_SETTINGS_REQUEST_CODE = 3;
     public static final int EXPORT_SETTINGS_REQUEST_CODE = 4;
-
+    public static final int LAUNCH_CONNECTION_REQUEST_CODE = 5;
     public static final String DEFAULT_LAYOUT_MAP = "English (US)";
-
     public static final String ACTION_USB_PERMISSION = "com.undatech.opaque.USB_PERMISSION";
-
     public static final String DEFAULT_SETTINGS_FILE = "defaultSettings";
-
     public static final int URL_BUFFER_SIZE = 3000;
-    public static final int VV_GET_FILE_TIMEOUT = 17000;
-
+    public static final int MAX_CONFIG_FILE_SIZE_BYTES = 30000;
+    public static final int GET_FILE_TIMEOUT = 17000;
     public static final String PVE_DEFAULT_REALM = "pam";
-
     public static final int LOGCAT_MAX_LINES = 500;
 }

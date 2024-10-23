@@ -27,6 +27,7 @@ import android.content.SharedPreferences.Editor;
 import android.util.Log;
 import android.widget.ImageView;
 
+import com.iiordanov.bVNC.AbstractConnectionBean;
 import com.iiordanov.bVNC.Constants;
 
 import org.json.JSONException;
@@ -47,13 +48,14 @@ import java.io.Serializable;
 import java.util.Iterator;
 import java.util.UUID;
 
-public class ConnectionSettings implements Connection, Serializable {
+public class ConnectionSettings extends AbstractConnectionBean implements Serializable {
     private static final String TAG = "ConnectionSettings";
     private static final long serialVersionUID = 1L;
 
     private String id = "";
     private String filename;
     private String connectionType = "";
+    private String connectionConfigFile = null;
     private String hostname = "";
     private String vmname = "";
     private String user = "";
@@ -265,6 +267,16 @@ public class ConnectionSettings implements Connection, Serializable {
 
     @Override
     public void setConnectionType(int connectionType) {
+    }
+
+    @Override
+    public String getConnectionConfigFile() {
+        return this.connectionConfigFile;
+    }
+
+    @Override
+    public void setConnectionConfigFile(String connectionConfigFile) {
+        this.connectionConfigFile = connectionConfigFile;
     }
 
     @Override
